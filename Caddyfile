@@ -1,0 +1,6 @@
+:8888 {
+  root * ./build
+  file_server
+
+  try_files {path}.html {path}
+}

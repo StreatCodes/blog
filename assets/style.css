@@ -3,20 +3,24 @@ body {
     background-color: #222;
     color: #c8c8c8;
     margin: 0 auto;
-    padding: 0 16px;
-    max-width: 1024px;
+    padding: 40px 20px;
+    max-width: 900px;
+    font-size: 1.2em;
 }
 
 h1 {
     color: #f0f0f0;
     font-size: 2em;
-    margin: 0 0 0.67em 0;
+    margin-top: 0;
     font-weight: normal;
 }
 
+p {
+    line-height: 1.6;
+}
+
 a {
-    color: #56a0ff;
-    text-decoration: none;
+    color: #c8c8c8;
     cursor: pointer;
 }
 
@@ -24,9 +28,26 @@ a:hover {
     text-decoration: underline;
 }
 
+hr {
+    border: 0;
+    border-top: 1px solid #3f3f3f;
+    margin: 20px 0;
+}
+
+header {
+    margin-bottom: 24px;
+}
+
+header h1 {
+    margin-bottom: 6px;
+}
+
 .links {
-    margin-top: 40px;
-    margin-bottom: 40px;
+    text-align: center;
+}
+
+.links hr {
+    margin: 40px 0;
 }
 
 .links span {
