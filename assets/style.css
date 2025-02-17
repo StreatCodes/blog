@@ -20,7 +20,7 @@ p {
 }
 
 a {
-    color: #c8c8c8;
+    color: #c4ae7b;
     cursor: pointer;
 }
 
@@ -32,6 +32,36 @@ hr {
     border: 0;
     border-top: 1px solid #3f3f3f;
     margin: 20px 0;
+}
+
+img {
+    width: 100%;
+}
+
+figure {
+    margin: 0;
+}
+
+figcaption {
+    font-size: .8em;
+    font-style: italic;
+}
+
+code {
+    background-color: #151515;
+    border: solid 1px #404040;
+    padding: 1px 3px;
+    border-radius: 5px;
+}
+
+pre>code {
+    display: block;
+    padding: 4px 8px;
+    overflow-y: auto;
+}
+
+pre {
+    margin: 0
 }
 
 header {
