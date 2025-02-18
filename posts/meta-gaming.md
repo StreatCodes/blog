@@ -226,12 +226,12 @@ Module._free(buf);
 
 Pretty neat, however there are two problems, the encoding function isn't exported by the module (I could modify the binary and export it myself). Additionally, the pointer that gets passed into the function is quite complicated and it would be really hard to fake all the data inside. There is a bunch of other stuff `$func2809` does above the small part I screen shot. I quickly abandoned this idea and decided to just reimplement the checksum part of the function myself in javascript, so I wrote a small script to dump the lookup table:
 
-```
+```javascript
 const view = new DataView(Module.asm.ic.buffer, 317520);
 const table = [];
-for(let i = 0; i < 256; i++) {
-    const val = view.getUint32(i * 4, true);
-    table.push(val);
+for (let i = 0; i < 256; i++) {
+  const val = view.getUint32(i * 4, true);
+  table.push(val);
 }
 ```
 
