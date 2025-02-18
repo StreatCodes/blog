@@ -4,7 +4,7 @@ description: Reverse engineering a game network protocol
 date: 17th of February 2025
 ---
 
-Most evenings when I was in years 6 and 7 I'd come home from school and log into an MMORPG. This game (which I will not name) is super grindy, you basically progress by killing monsters repeatably. It's also super pay to win, for instance you can upgrade each item you equip 10 times, each time it's significantly less likely the upgrade will succeed. These upgrade items drop from monsters, however if the upgrade fails there's a chance your equipment will break. To prevent the equipment from breaking you have to use an additional item which can only be purchased with real money or from other players in game who have paid for this item and are selling it for in game currency. Regardless of this terrible monitization strategy I still enjoyed the game growing up. I stopped playing back in early high school and the games player base gradually died down. Fast forward 10 years and a whole rework of the game has been released. They've compiled the game to web assembly and added some glue code so it renders in the browser and all the input events and networking works. They also fixed a bunch of bugs and it has completely revived the game, you can run through the towns and hundreds of people are running around and selling items.
+Most evenings when I was in years 6 and 7 I'd come home from school and log into an MMORPG. This game (which I will not name) is super grindy, you basically progress by killing monsters repeatably. It's also super pay to win, for instance you can upgrade each item you equip 10 times, each time it's significantly less likely the upgrade will succeed. These upgrade items drop from monsters, however if the upgrade fails there's a chance your equipment will break. To prevent the equipment from breaking you have to use an additional item which can only be purchased with real money or from other players in game who have paid for this item and are selling it for in game currency. Regardless of this terrible monetisation strategy I still enjoyed the game growing up. I stopped playing back in early high school and the games player base gradually died down. Fast forward 10 years and a whole rework of the game has been released. They've compiled the game to web assembly and added some glue code so it renders in the browser and all the input events and networking works. They also fixed a bunch of bugs and it has completely revived the game, you can run through the towns and hundreds of people are running around and selling items.
 
 I started playing again for a bit of fun when they re-released the game and was enjoying the nostalgia hit. However it slowly wore off as I realised the amount of grinding that's required to level up and gross advantage people pouring money into the game had. Then I started wondering how they'd managed to get the game running in the browser. They'd done a really good job, textures get streamed as needed to the client, they just briefly appear white and fade in. There aren't any huge lag spikes when entering areas with large crowds, which used to be an issue in the original game. They also aggressively cache assets in the CDN and in your browser so you don't have to redownload parts of the game often, honestly you can register and play in like 30 seconds.
 
@@ -209,15 +209,17 @@ The highlighted breakpoint in the image above is the function that writes to tha
 
 This code is basically a for loop that iterates over each byte of the packet. The red box looks up the XOR key and XOR's the current byte. `317488` is the memory address of the outbound XOR key.
 
-The blue box generates the checksum. It's interesting that both the encoding and checksum get generated in the same `for` loop, this makes me think that my suspicion of a custom CRC implementation may be true. `$var1` is the checksum value which always starts at `-1` and each iteration updates this value. The constant `317520` is the starting address of the (CRC look up table)[https://en.wikipedia.org/wiki/Computation_of_cyclic_redundancy_checks#Multi-bit_computation_using_lookup_tables].
+The blue box generates the checksum. It's interesting that both the encoding and checksum get generated in the same `for` loop, this makes me think that my suspicion of a custom CRC implementation may be true. `$var1` is the checksum value which always starts at `-1` and each iteration updates this value. The constant `317520` is the starting address of the [CRC look up table](https://en.wikipedia.org/wiki/Computation_of_cyclic_redundancy_checks#Multi-bit_computation_using_lookup_tables).
 
 Finally, the yellow box writes the checksum (`$var1`) to the correct position in the packet, the 5th byte.
 
 Initially I thought I could maybe call this function from outside the web assembly module to generate a correct packet. I even discovered I can easily write memory to the web assembly module's address space using their own binding tool 'embind':
 
-```
+```javascript
 const buf = Module._malloc(20);
-const data = new Uint8Array([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20])
+const data = new Uint8Array([
+  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+]);
 Module.HEAPU8.set(data, buf);
 Module._free(buf);
 ```

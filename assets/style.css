@@ -83,3 +83,30 @@ header h1 {
 .links span {
     margin: 0 8px;
 }
+
+/* Code highlighting */
+pre>code {
+    .kw {
+        color: #699bd0;
+    }
+
+    .op {
+        color: #9e82c9;
+    }
+
+    .dv {
+        color: #dfcd86;
+    }
+
+    .cf {
+        color: #e17dd7;
+    }
+
+    .co {
+        color: #7ba862;
+    }
+
+    .st {
+        color: #e19756;
+    }
+}
