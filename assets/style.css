@@ -110,3 +110,18 @@ pre>code {
         color: #e19756;
     }
 }
+
+@media (prefers-color-scheme: light) {
+    body {
+        background-color: #c8c8c8;
+        color: #222;
+    }
+
+    h1 {
+        color: #0f0f0f;
+    }
+
+    a {
+        color: #222;
+    }
+}
