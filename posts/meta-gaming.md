@@ -35,13 +35,13 @@ I took a look at the network tab and found the websocket used for realtime commu
 
 ![Chrome websocket traffic for the game](/assets/meta-gaming/network-traffic.png)
 
-This is what the raw network traffic looks like, one thing that's immediately obvious is there is a message identifier at the start of the packet. `1F` is used to delineate sent packets, `B8` is used for received (from the clients perspective). Following this is the message type a 32 bit little endian integer `216` in this case. I've linked up some useful id's as followed:
+This is what the raw network traffic looks like, one thing that's immediately obvious is there is a message identifier at the start of the packet. `1F` is used to delineate sent packets, `B8` is used for received (from the clients perspective). Following this is the message length a 32 bit little endian integer `216` in this case. We can determine some of the types of messages by their length; I've linked up some useful messages as followed:
 
-- received `24` - health/mana regenerate
-- received `98` - damage dealt
-- received `54` - mob moving to new location
-- sent `12` - use item
-- sent `39` - target mob
+- received length `24` - health/mana regenerate
+- received length `98` - damage dealt
+- received length `54` - mob moving to new location
+- sent length `12` - use item
+- sent length `39` - target mob
 
 `54` is useful as I can see where all the monsters are moving around me and their ID's. `98` can be used to track damage my character receive and the monsters I'm attacking. `39` can be used to target monsters to attack and `12` to automatically use health items when necessary. It's worth noting that there is no key a user can press to target monsters automatically, also it would likely be easily detectable if I generated fake keyboard events to control the character. From what I could tell; programatically generated keyboard events can easily be differentiated from hardware events for security reasons within the browser. Regardless you get much more control and precision from network commands. To start decoding these messages I logged a bunch of them and started looking for patterns within them, it became clear pretty quick that the messages were encoded somehow, encryption maybe? Well... kinda... the messages are [XOR](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Bitwise_XOR)'d, this is a pretty poor attempt at hiding the underlying data and if real encryption was used I would have had a lot more trouble. I basically stared at columns of hex for hours until I noticed reoccurring patterns:
 
@@ -142,51 +142,52 @@ window.socketMessageHandler = (event) => {
 At this point we almost have everything we need for our bot, we can listen to events from the server, decode them and use the same technique to encode messages we send. There are a few hurdles left in our way however, lets take a closer look at the decoded messages:
 
 ```
-redacted ffe30946acd6bb4274bc8745 5a01 0237 0000 70ef2e4300000000 17 71a03c189b6b9d10
-redacted 9fe40946abd6bb4244cb8745 5a01 1237 0000 70ef2e4300000000 01 595d7562ce936511
-redacted 9fe40946abd6bb4244cb8745 5a01 1337 0000 6c78b14300000000 17 71a03c189b6b9d10
-redacted 63e40946abd6bb42b6c58745 5a01 1937 0000 6c78b14300000000 01 cf98dcc5ada2c70d
-redacted 3be40946acd6bb4202c28745 5a01 2337 0000 6c78b14300000000 01 f06190834070c698
-redacted 3be40946acd6bb4202c28745 5a01 2437 0000 70ef2e4300000000 17 71a03c189b6b9d10
-redacted b3e40946abd6bb421ecd8745 5a01 3037 0000 70ef2e4300000000 01 50aadfcbcdcbaaa4
-redacted b3e40946abd6bb421ecd8745 5a01 3437 0000 6c78b14300000000 17 71a03c189b6b9d10
-redacted 63e40946abd6bb42b6c58745 5a01 3c37 0000 70ef2e4300000000 17 71a03c189b6b9d10
-redacted 95e40946abd6bb4257ca8745 5a01 6137 0000 70ef2e4300000000 17 71a03c189b6b9d10
-redacted 67e50946abd6bb42c8dd8745 5a01 7637 0000 6c78b14300000000 17 71a03c189b6b9d10
-redacted 0de50946abd6bb4273d58745 5a01 7f37 0000 70ef2e4300000000 17 71a03c189b6b9d10
-redacted d5e50946abd6bb42f7e78745 5a01 9337 0000 6c78b14300000000 17 71a03c189b6b9d10
-redacted 21e50946abd6bb424dd78745 5a01 a537 0000 70ef2e4300000000 17 71a03c189b6b9d10
-redacted c1e50946abd6bb421de68745 5a01 b537 0000 6c78b14300000000 17 71a03c189b6b9d10
-redacted 99e50946abd6bb4269e28745 5a01 d537 0000 6c78b14300000000 17 71a03c189b6b9d10
-redacted 17e50946abd6bb4260d68745 5a01 e237 0000 70ef2e4300000000 17 71a03c189b6b9d10
-redacted 35e50946abd6bb4227d98745 5a01 f737 0000 70ef2e4300000000 17 71a03c189b6b9d10
+04b01a64 ffe30946acd6bb4274bc8745 5a 01 0237 0000 70ef2e4300000000 17 71a03c189b6b9d10
+04b01a64 9fe40946abd6bb4244cb8745 5a 01 1237 0000 70ef2e4300000000 01 595d7562ce936511
+04b01a64 9fe40946abd6bb4244cb8745 5a 01 1337 0000 6c78b14300000000 17 71a03c189b6b9d10
+04b01a64 63e40946abd6bb42b6c58745 5a 01 1937 0000 6c78b14300000000 01 cf98dcc5ada2c70d
+04b01a64 3be40946acd6bb4202c28745 5a 01 2337 0000 6c78b14300000000 01 f06190834070c698
+04b01a64 3be40946acd6bb4202c28745 5a 01 2437 0000 70ef2e4300000000 17 71a03c189b6b9d10
+04b01a64 b3e40946abd6bb421ecd8745 5a 01 3037 0000 70ef2e4300000000 01 50aadfcbcdcbaaa4
+04b01a64 b3e40946abd6bb421ecd8745 5a 01 3437 0000 6c78b14300000000 17 71a03c189b6b9d10
+04b01a64 63e40946abd6bb42b6c58745 5a 01 3c37 0000 70ef2e4300000000 17 71a03c189b6b9d10
+04b01a64 95e40946abd6bb4257ca8745 5a 01 6137 0000 70ef2e4300000000 17 71a03c189b6b9d10
+04b01a64 67e50946abd6bb42c8dd8745 5a 01 7637 0000 6c78b14300000000 17 71a03c189b6b9d10
+04b01a64 0de50946abd6bb4273d58745 5a 01 7f37 0000 70ef2e4300000000 17 71a03c189b6b9d10
+04b01a64 d5e50946abd6bb42f7e78745 5a 01 9337 0000 6c78b14300000000 17 71a03c189b6b9d10
+04b01a64 21e50946abd6bb424dd78745 5a 01 a537 0000 70ef2e4300000000 17 71a03c189b6b9d10
+04b01a64 c1e50946abd6bb421de68745 5a 01 b537 0000 6c78b14300000000 17 71a03c189b6b9d10
+04b01a64 99e50946abd6bb4269e28745 5a 01 d537 0000 6c78b14300000000 17 71a03c189b6b9d10
+04b01a64 17e50946abd6bb4260d68745 5a 01 e237 0000 70ef2e4300000000 17 71a03c189b6b9d10
+04b01a64 35e50946abd6bb4227d98745 5a 01 f737 0000 70ef2e4300000000 17 71a03c189b6b9d10
 ```
 
-- `redacted` - I think this is my character ID or something
+- `04b01a64` - This is the message type
 - `ffe30946 acd6bb42 74bc8745` - Three 32bit floats the x, y and z co-ordinates of my character
-- `5a01` - I believe this is the current area my character is in
+- `5a` - Not sure what this is, always seems to be `5a`
+- `01` - This is the variation of the message, determines how many parameters are included
 - `0237` - This is the current game tick, you can see it increment above, I believe this is to add randomness (more on this later)
 - `0000` - Unknown, seems to always be 0
 - `70ef2e4300000000` - The mob id, a 64bit integer
 - `17` - The action, Attack selected target in this case
-- `71a03c189b6b9d10` - Need to figure out what this is
+- `71a03c189b6b9d10` - This a cryptographically generated hash
 
 And this is what they look like when the messages are translated to their real meanings:
 
 ```
-targetted mobId: 98005541 x: 8598.3896484375 y: 195.37403869628906 z: 4436.40625 area: 346 tick: 453 b4468a9fa514f43d
-moved mobId: 1126201184 x: 8598.3896484375 y: 195.37403869628906 z: 4436.40625 area: 346 tick: 499 124c9f63e1d4bfc5
-jump mobId: 1122362256 x: 8598.888671875 y: 195.164794921875 z: 4436.82177734375 area: 346 tick: 505 e1246dedf070d6f4
-moved mobId: 1125543464 x: 8598.19140625 y: 193.5052032470703 z: 4439.82470703125 area: 346 tick: 595 124c9f63e1d4bfc5
-moved mobId: 1100000000 x: 8599.4755859375 y: 193.8284454345703 z: 4439.62841796875 area: 346 tick: 614 124c9f63e1d4bfc5
-jump mobId: 1099850240 x: 8599.724609375 y: 194.2017059326172 z: 4438.85595703125 area: 346 tick: 621 c55a7a1af10127ed
-stopped mobId: 1099435520 x: 8596.896484375 y: 195.153076171875 z: 4436.97900390625 area: 346 tick: 699 767ddcbccf07e0a9
+targetted mobId: 98005541 x: 8598.3896484375 y: 195.37403869628906 z: 4436.40625 tick: 453 b4468a9fa514f43d
+moved mobId: 1126201184 x: 8598.3896484375 y: 195.37403869628906 z: 4436.40625 tick: 499 124c9f63e1d4bfc5
+jump mobId: 1122362256 x: 8598.888671875 y: 195.164794921875 z: 4436.82177734375 tick: 505 e1246dedf070d6f4
+moved mobId: 1125543464 x: 8598.19140625 y: 193.5052032470703 z: 4439.82470703125 tick: 595 124c9f63e1d4bfc5
+moved mobId: 1100000000 x: 8599.4755859375 y: 193.8284454345703 z: 4439.62841796875 tick: 614 124c9f63e1d4bfc5
+jump mobId: 1099850240 x: 8599.724609375 y: 194.2017059326172 z: 4438.85595703125 tick: 621 c55a7a1af10127ed
+stopped mobId: 1099435520 x: 8596.896484375 y: 195.153076171875 z: 4436.97900390625 tick: 699 767ddcbccf07e0a9
 ```
 
 So far we've only looked at the decoded portion of the message, however all messages include a header that looks like this: `1f 27000000 ce0c0399`
 
 - `1f` - Sent message as mentioned earlier
-- `27000000` - Message type (targeting)
+- `27000000` - Message length
 - `ce0c0399` - CRC value
 
 This part is problematic, we need to be able to send a real [CRC](https://en.wikipedia.org/wiki/Cyclic_redundancy_check) to the server, if this is incorrect the server will almost certainly reject my messages (I never tested this as I didn't want my account to potentially get flagged). This is intentionally made random based on the contents of the message so it can be verified when receiving the message. I tested a bunch of CRC algorithms to see if it was a common off the shelf implementation but couldn't find a match (though there were some hints it was derived from [crc32c](https://github.com/google/crc32c)).
@@ -257,6 +258,6 @@ const hexChecksum = (checksum >>> 0).toString(16).padStart(8, "0");
 
 Amazingly this pretty much worked first go, I now have the checksum generating for every outbound packet and I can easily verify it by testing it against the real messages!
 
-### To be continued...
+Finally we need a way of generating that cryptographic hash that's included in some messages. I spent a lot of time stepping through the web assembly module trying to work out how it was generated and see if we could do something similiar to the CRC. I also went through and bounds generating and intercepting a real hash, which worked but cause the the bot to move strangely. Eventually I noticed the movement hash is always the same. I perhaps it was originally cryptographically generated too but caused to much strain due to how frequent these messages get sent. Anyway sending movement hash with other messages works too. This is probably quite easily detectable but I used it for a few weeks without any issues.
 
-The next step is to figure out the last section of the targeting packets and then I can start sending messages to the server
+That's basically the entire network protocol, the rest is just figuring out which messages do what. I'll do a follow up post on how I got the bot to intercept and level on its own without any interaction.
