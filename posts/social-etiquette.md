@@ -55,46 +55,25 @@ Reference: https://example.com/image2.png IXTqCQBJUG9xUCcd9BYE9y666AQ94orAg6itmS
 
 ## A Kinda Simple Social Protocol
 
-This protocol defines how messages can be shared between servers and clients to their recipients. KSSP is built on top of HTTPS, it is a standardised collection of CRUD endpoints to keep track of users, their messages, followers and likes.
+This protocol defines how messages can be shared between servers and clients to their recipients. KSSP is built on top of HTTPS, it is a standardised collection of CRUD endpoints to keep track of users, their messages, followers and likes. It is not a JSON API, most endpoints simply return test. If an endpoint is a list of messages then it will use the MIME Multipart format to seperate them.
 
-# Draft below this point
+#### User endpoints
 
-#### Messages
+- `/api/{username}/messages` - `POST`, `GET` - Create a new message or list the messages authored by the user. The multipart format should be used to list multiple messasges.
+- `/api/{username}/messages/{id}` - `PATCH`, `GET`, `DELETE` - Get, create or delete the message
+- `/api/{username}/key` - `GET` - Get the user's public key
 
-- `/{username}/messages` - `POST`, `GET` - Create a new message or list the messages authored by the user.
-- `/{username}/messages/{id}` - `PATCH`, `GET`, `DELETE` - Get, create or delete the message
+#### Server endpoints
 
-#### Validation
+The server must prevent users from using the username "server" to prevent them from colliding with the following endpoints.
 
-`/{username}/key` - `GET` - Get the user's public key
+- `/api/server/challenge` - `GET` - Get a unique challenge that needs to be solved in order to POST, PATCH or DELETE content on the server. The challenge should only be valid for a short period of time e.g. 60 seconds. The response must include the `Challenge-Expires-At` header to indicate when the challenge expires. This is a random string of text that client needs to sign with their public key in order to interact with any of the other endpoints. The client needs to send the challenge and signature in the `Authorization` header when attempting to make requests to any of the user endpoints.
+- `/api/server/capabilities` - `GET` - Get a comma seperated list of server capabilities. This is a reserved endpoint to allow clients and servers to determine what a server is capable of. In future `replies`, `follows`, `likes` may be supported, but right now this should just return 200 OK with an empty body.
 
-Response:
-```json
-{
-    "publicKey": "MCowBQYDK2VwAyEA4qlBy3GvFZ2q6n3bsHAT1f6yZwdi9jqxXPhu871HZ6U=",
-}
-```
+## Future endevours
 
-`/challenge` - `GET` - Get a unique challenge that needs to be solved in order to POST, PATCH or DELETE content to the server. The challenge should only be valid for a short period of time e.g. 60 seconds.
+Obviously adding support for replying, following and liking is high priority. But the above is the most minimal version of the protocol. It's the minimun required for the most fundemental social sharing like blogging or a new website.
 
-Response:
-```json
-{
-    "challenge": "aGFzbGRuYWxza25kYXNka2pua2puYXNka25h",
-    "expiry": "2025-12-04T09:40:18.115Z"
-}
-```
+Another interesting topic to explore is direct messaging. The same ed25519 keys can generate a X25519 key pair which can be used to encrypt data. We could encrypt and base64 encode messages and submit them directly to another user instead of displaying them publicly. In cases where the user's private key is not stored on the server you would have E2E encryption
 
-#### Capabilities
-
-
-`/capabilities` - `GET` - Get the list of capabilities the server supports.
-
-Response:
-```json
-["replies", "follows", "likes"]
-```
-
-the same ed25519 keys can generate a X25519 key pair which can be used to encrypt data. We can take advantage of this for DM's. Encrypt and base64 encode the content field and then send the message to the recipiant. now you have E2E encryption
-
-no solution for LLM's slurping your data, if you want to put your thoughts on the public interenet then expect other companies to feed them into their LLMs
+*What about my privacy or LLM's being trained on my data?* Unfortunetly if you want to put your thoughts on the public interenet then expect private companies to feed them into their LLMs. Whether they're scrapping HTML or hitting APIs to consume it, they will do it. 
